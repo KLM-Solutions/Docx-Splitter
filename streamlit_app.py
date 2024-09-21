@@ -3,9 +3,6 @@ from docx import Document
 import io
 import zipfile
 import base64
-import os
-import subprocess
-import platform
 
 def process_document(file, heading_level):
     doc = Document(file)
@@ -43,13 +40,14 @@ def get_docx_download_link(doc_buffer, filename):
     b64 = base64.b64encode(doc_buffer.getvalue()).decode()
     return f'<a href="data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,{b64}" download="{filename}" class="download-link"><i class="fas fa-download"></i></a>'
 
-def open_file(filepath):
-    if platform.system() == 'Darwin':       # macOS
-        subprocess.call(('open', filepath))
-    elif platform.system() == 'Windows':    # Windows
-        os.startfile(filepath)
-    else:                                   # linux variants
-        subprocess.call(('xdg-open', filepath))
+def render_document_content(section):
+    content = ""
+    for para in section:
+        if para.style.name.lower().startswith('heading'):
+            content += f"## {para.text}\n\n"
+        else:
+            content += f"{para.text}\n\n"
+    return content
 
 st.set_page_config(page_title="DOCX Processor", page_icon="📄", layout="wide")
 
@@ -107,12 +105,15 @@ if 'uploaded_file' not in st.session_state:
     st.session_state.uploaded_file = None
 if 'heading_choice' not in st.session_state:
     st.session_state.heading_choice = "Heading 1"
+if 'selected_section' not in st.session_state:
+    st.session_state.selected_section = None
 
 uploaded_file = st.file_uploader("Choose a DOCX file", type="docx")
 
 if uploaded_file is not None and uploaded_file != st.session_state.uploaded_file:
     st.session_state.uploaded_file = uploaded_file
     st.session_state.sections = []  # Reset sections when a new file is uploaded
+    st.session_state.selected_section = None  # Reset selected section
     st.success("File successfully uploaded!")
 
 heading_options = ["Heading 1", "Heading 2", "Heading 3", "Any Heading", "Page End"]
@@ -131,33 +132,40 @@ if st.button("Process Document") and st.session_state.uploaded_file:
 # Function to handle deletion
 def delete_section(index):
     st.session_state.sections.pop(index)
+    st.session_state.selected_section = None  # Reset selected section after deletion
     st.rerun()
 
-# Display file grid
+# Display file grid and content
 if st.session_state.sections:
-    for i, section in enumerate(st.session_state.sections):
-        doc_buffer = create_docx(section)
-        filename = f"Section_{i+1}.docx"
-        preview = section[0].text[:30] + "..." if len(section[0].text) > 30 else section[0].text
-        
-        st.markdown(f"""
-            <div class="file-item">
-                <i class="fas fa-file-word file-icon"></i>
-                <div class="file-name" title="{preview}">{filename}</div>
-                {get_docx_download_link(doc_buffer, filename)}
-            </div>
-        """, unsafe_allow_html=True)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button(f"View {i+1}"):
-                temp_file_path = f"temp_section_{i+1}.docx"
-                with open(temp_file_path, "wb") as temp_file:
-                    temp_file.write(doc_buffer.getvalue())
-                open_file(temp_file_path)
-        with col2:
-            if st.button(f"Delete {i+1}"):
-                delete_section(i)
+    col1, col2 = st.columns([1, 2])
+    
+    with col1:
+        for i, section in enumerate(st.session_state.sections):
+            doc_buffer = create_docx(section)
+            filename = f"Section_{i+1}.docx"
+            preview = section[0].text[:30] + "..." if len(section[0].text) > 30 else section[0].text
+            
+            st.markdown(f"""
+                <div class="file-item">
+                    <i class="fas fa-file-word file-icon"></i>
+                    <div class="file-name" title="{preview}">{filename}</div>
+                    {get_docx_download_link(doc_buffer, filename)}
+                </div>
+            """, unsafe_allow_html=True)
+            
+            col1_1, col1_2 = st.columns(2)
+            with col1_1:
+                if st.button(f"View {i+1}"):
+                    st.session_state.selected_section = i
+            with col1_2:
+                if st.button(f"Delete {i+1}"):
+                    delete_section(i)
+                    st.rerun()
+    
+    with col2:
+        if st.session_state.selected_section is not None:
+            st.markdown("## Section Content")
+            st.markdown(render_document_content(st.session_state.sections[st.session_state.selected_section]))
     
     # Create ZIP file with remaining sections
     if st.session_state.sections:
@@ -176,4 +184,5 @@ if st.session_state.sections:
             mime="application/zip"
         )
 else:
-    st.info("Upload a .docx file, select a division method, and click 'Process Document' to begin.")
+    st.info("Upload a .docx file, select a division method, and click 'Process Document' to begin.")"""
+
