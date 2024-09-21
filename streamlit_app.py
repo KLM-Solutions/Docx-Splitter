@@ -1,4 +1,3 @@
-##This is an code for with grid formate and others all clear only flaw is alignment
 import streamlit as st
 from docx import Document
 import io
