@@ -56,41 +56,43 @@ st.markdown("""
 <style>
     .file-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 20px;
-        padding: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 10px;
+        padding: 10px;
     }
     .file-item {
         display: flex;
         flex-direction: column;
         align-items: center;
         text-align: center;
-        padding: 10px;
+        padding: 5px;
         border: 1px solid #ddd;
         border-radius: 5px;
         transition: all 0.3s;
     }
     .file-item:hover {
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
     .file-icon {
-        font-size: 48px;
+        font-size: 24px;
         color: #4CAF50;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
     }
     .file-name {
-        font-size: 12px;
+        font-size: 10px;
         word-wrap: break-word;
         max-width: 100%;
+        margin-bottom: 5px;
     }
     .download-link {
         color: #4CAF50;
         text-decoration: none;
-        margin-top: 5px;
+        margin-top: 3px;
     }
-    .delete-btn {
-        color: #ff4d4d;
-        cursor: pointer;
+    .button-container {
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
         margin-top: 5px;
     }
     .content-box {
@@ -99,6 +101,12 @@ st.markdown("""
         padding: 10px;
         max-height: 500px;
         overflow-y: auto;
+    }
+    .stButton > button {
+        font-size: 10px;
+        padding: 2px 5px;
+        height: auto;
+        min-height: 0px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -140,17 +148,17 @@ if st.button("Process Document") and st.session_state.uploaded_file:
 def delete_section(index):
     st.session_state.sections.pop(index)
     st.session_state.selected_section = None  # Reset selected section after deletion
-    st.rerun()
 
 # Display file grid and content
 if st.session_state.sections:
     col1, col2 = st.columns([1, 2])
     
     with col1:
+        st.markdown('<div class="file-grid">', unsafe_allow_html=True)
         for i, section in enumerate(st.session_state.sections):
             doc_buffer = create_docx(section)
             filename = f"Section_{i+1}.docx"
-            preview = section[0].text[:30] + "..." if len(section[0].text) > 30 else section[0].text
+            preview = section[0].text[:20] + "..." if len(section[0].text) > 20 else section[0].text
             
             st.markdown(f"""
                 <div class="file-item">
@@ -162,13 +170,14 @@ if st.session_state.sections:
             
             col1_1, col1_2 = st.columns(2)
             with col1_1:
-                if st.button(f"View {i+1}"):
+                if st.button("View", key=f"view_{i}", help=f"View section {i+1}"):
                     st.session_state.selected_section = i
             with col1_2:
-                if st.button(f"Delete {i+1}"):
+                if st.button("Delete", key=f"delete_{i}", help=f"Delete section {i+1}"):
                     delete_section(i)
                     st.rerun()
-    
+        st.markdown('</div>', unsafe_allow_html=True)
+
     with col2:
         if st.session_state.selected_section is not None:
             st.markdown("## Section Content")
