@@ -93,6 +93,13 @@ st.markdown("""
         cursor: pointer;
         margin-top: 5px;
     }
+    .content-box {
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        max-height: 500px;
+        overflow-y: auto;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -165,7 +172,12 @@ if st.session_state.sections:
     with col2:
         if st.session_state.selected_section is not None:
             st.markdown("## Section Content")
-            st.markdown(render_document_content(st.session_state.sections[st.session_state.selected_section]))
+            content = render_document_content(st.session_state.sections[st.session_state.selected_section])
+            st.markdown(f"""
+                <div class="content-box">
+                    {content}
+                </div>
+            """, unsafe_allow_html=True)
     
     # Create ZIP file with remaining sections
     if st.session_state.sections:
@@ -185,4 +197,3 @@ if st.session_state.sections:
         )
 else:
     st.info("Upload a .docx file, select a division method, and click 'Process Document' to begin.")
-
