@@ -1,3 +1,4 @@
+##This is an code for with grid formate and others all clear only flaw is alignment
 import streamlit as st
 from docx import Document
 import io
@@ -161,9 +162,12 @@ if st.session_state.sections:
             
             col1, col2 = st.columns(2)
             with col1:
-                st.button(f"View {i+1}", key=f"view_{i}", on_click=view_section, args=(i+1,))
+                if st.button(f"View {i+1}", key=f"view_{i}"):
+                    view_section(i+1)
             with col2:
-                st.button(f"Delete {i+1}", key=f"delete_{i}", on_click=delete_section, args=(i,))
+                if st.button(f"Delete {i+1}", key=f"delete_{i}"):
+                    delete_section(i)
+                    st.rerun()
 
     # Create ZIP file with remaining sections
     if st.session_state.sections:
