@@ -184,5 +184,5 @@ if st.session_state.sections:
             mime="application/zip"
         )
 else:
-    st.info("Upload a .docx file, select a division method, and click 'Process Document' to begin.")"""
+    st.info("Upload a .docx file, select a division method, and click 'Process Document' to begin.")
 
