@@ -7,9 +7,6 @@ import os
 import subprocess
 import platform
 
-def delete_section(index):
-    st.session_state.sections.pop(index)
-
 def process_document(file, heading_level):
     doc = Document(file)
     sections = []
@@ -54,18 +51,17 @@ def open_file(filepath):
     else:                                   # linux variants
         subprocess.call(('xdg-open', filepath))
 
-@st.cache_data
-def view_section(index):
-    temp_file_path = f"temp_section_{index}.docx"
-    with open(temp_file_path, "wb") as temp_file:
-        temp_file.write(create_docx(st.session_state.sections[index-1]).getvalue())
-    open_file(temp_file_path)
-
 st.set_page_config(page_title="DOCX Processor", page_icon="📄", layout="wide")
 
 st.markdown("""
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
 <style>
+    .file-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 20px;
+        padding: 20px;
+    }
     .file-item {
         display: flex;
         flex-direction: column;
@@ -75,14 +71,12 @@ st.markdown("""
         border: 1px solid #ddd;
         border-radius: 5px;
         transition: all 0.3s;
-        background-color: #f9f9f9;
-        margin-bottom: 20px;
     }
     .file-item:hover {
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     .file-icon {
-        font-size: 36px;
+        font-size: 48px;
         color: #4CAF50;
         margin-bottom: 10px;
     }
@@ -90,29 +84,21 @@ st.markdown("""
         font-size: 12px;
         word-wrap: break-word;
         max-width: 100%;
-        margin-bottom: 5px;
     }
     .download-link {
         color: #4CAF50;
         text-decoration: none;
         margin-top: 5px;
     }
-    .button-container {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-        margin-top: 10px;
-    }
-    .button-container button {
-        flex: 1;
-        margin: 0 5px;
-        padding: 5px;
-        font-size: 12px;
+    .delete-btn {
+        color: #ff4d4d;
+        cursor: pointer;
+        margin-top: 5px;
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("DOCX Splitter")
+st.title("DOCX Processor")
 
 # Initialize session state
 if 'sections' not in st.session_state:
@@ -142,32 +128,37 @@ if st.button("Process Document") and st.session_state.uploaded_file:
     
     st.success(f"Document processed! Found {len(st.session_state.sections)} sections.")
 
+# Function to handle deletion
+def delete_section(index):
+    st.session_state.sections.pop(index)
+    st.rerun()
+
 # Display file grid
 if st.session_state.sections:
-    cols = st.columns(4)
     for i, section in enumerate(st.session_state.sections):
-        with cols[i % 4]:
-            doc_buffer = create_docx(section)
-            filename = f"Section_{i+1}.docx"
-            preview = section[0].text[:20] + "..." if len(section[0].text) > 20 else section[0].text
-            
-            st.markdown(f"""
+        doc_buffer = create_docx(section)
+        filename = f"Section_{i+1}.docx"
+        preview = section[0].text[:30] + "..." if len(section[0].text) > 30 else section[0].text
+        
+        st.markdown(f"""
             <div class="file-item">
                 <i class="fas fa-file-word file-icon"></i>
                 <div class="file-name" title="{preview}">{filename}</div>
                 {get_docx_download_link(doc_buffer, filename)}
             </div>
-            """, unsafe_allow_html=True)
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button(f"View {i+1}", key=f"view_{i}"):
-                    view_section(i+1)
-            with col2:
-                if st.button(f"Delete {i+1}", key=f"delete_{i}"):
-                    delete_section(i)
-                    st.rerun()
-
+        """, unsafe_allow_html=True)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button(f"View {i+1}"):
+                temp_file_path = f"temp_section_{i+1}.docx"
+                with open(temp_file_path, "wb") as temp_file:
+                    temp_file.write(doc_buffer.getvalue())
+                open_file(temp_file_path)
+        with col2:
+            if st.button(f"Delete {i+1}"):
+                delete_section(i)
+    
     # Create ZIP file with remaining sections
     if st.session_state.sections:
         zip_buffer = io.BytesIO()
